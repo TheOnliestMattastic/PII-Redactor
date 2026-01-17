@@ -1,14 +1,25 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 
 const app = new Hono();
+
+// =============================================================================
+// VALIDATION
+// -----------------------------------------------------------------------------
+// WHAT: Enfore input constraints to prevent DoS and memory exhaustion
+// WHY: Cludflare Workers have memory/execution limits; unbounded input is a vector
+// HOW: Check string length, reject oversized payloads early
+// NOTE: 1MB limit is reasonable for edge compute; adjust based on CF tier
+// =============================================================================
+
+const MAX_INPUT_LENGTH = 1_048_576; // 1MB
+const RATE_LIMIT_WINDOW = 60_000; // 60 seconds
+const MAX_REQUESTS_PER_MINUTE = 100; // per IP/key
 
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
 
 // Standard PII Patterns (Regex)
-// NOTE: These are simplified patterns for demonstration. Production systems
-// may require more robust regex for different regions/formats.
 const PATTERNS = {
   // IPv4: 4 groups of 1-3 digits separated by dots
   IPV4: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
@@ -20,7 +31,7 @@ const PATTERNS = {
   SSN_US: /\b\d{3}-\d{2}-\d{4}\b/g,
 
   // Credit Card (Simple): 13-19 digits, optionally separated by dashes or spaces
-  CREDIT_CARD: /\b(?:\d[ -]*?){13,19}\b/g
+  CREDIT_CARD: /\b(?:\d[ -]*?){13,19}\b/g,
 };
 
 // =============================================================================
@@ -31,32 +42,56 @@ const PATTERNS = {
 // HOW:  Iteratively applies regex replacements to the input string.
 // =============================================================================
 
-app.post('/redact', async (c) => {
+app.post("/redact", async (c) => {
+  // ---------------------------------------------------------------------------
   // 1. Input Parsing & Validation
+  // ---------------------------------------------------------------------------
+
   let body;
   try {
     body = await c.req.json();
   } catch (e) {
     return c.json(
-      { success: false, error: "Invalid or missing JSON body", code: "INVALID_BODY" },
-      400
+      {
+        success: false,
+        error: "Invalid or missing JSON body",
+        code: "INVALID_BODY",
+      },
+      400,
     );
   }
 
   const { text } = body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     return c.json(
       {
         success: false,
         error: "Missing or invalid 'text'. Expected a non-empty string.",
-        code: "INVALID_INPUT"
+        code: "INVALID_INPUT",
       },
-      400
+      400,
     );
   }
 
+  // Input size validation
+  if (text.length > MAX_INPUT_LENGTH) {
+    return c.json(
+      {
+        success: false,
+        error: `Input exceeds maximum length of ${MAX_INPUT_LENGTH} characters.`,
+        code: "INPUT_TOO_LARGE",
+        max_length: MAX_INPUT_LENGTH,
+        received_length: text.length,
+      },
+      413, // Payload too large
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // 2. The Redaction Pipe
+  // ---------------------------------------------------------------------------
+
   let redactedText = text;
   let totalRedactions = 0;
 
@@ -71,12 +106,11 @@ app.post('/redact', async (c) => {
   };
 
   //Apply Patterns
-  applyRedaction(PATTERNS.IPV4, '[REDACTED_IP]');
-  applyRedaction(PATTERNS.EMAIL, '[REDACTED_EMAIL]');
-  applyRedaction(PATTERNS.SSN_US, '[REDACTED_SSN]');
+  applyRedaction(PATTERNS.IPV4, "[REDACTED_IP]");
+  applyRedaction(PATTERNS.EMAIL, "[REDACTED_EMAIL]");
+  applyRedaction(PATTERNS.SSN_US, "[REDACTED_SSN]");
   // Simple CC check: replace with a generic tag to avoid leaking card length
-  applyRedaction(PATTERNS.CREDIT_CARD, '[REDACTED_CREDIT_CARD]');
-
+  applyRedaction(PATTERNS.CREDIT_CARD, "[REDACTED_CREDIT_CARD]");
 
   // 3. Construct Response
   return c.json({
@@ -85,8 +119,8 @@ app.post('/redact', async (c) => {
     metadata: {
       original_length: text.length,
       redacted_length: redactedText.length,
-      redactions_count: totalRedactions
-    }
+      redactions_count: totalRedactions,
+    },
   });
 });
 
