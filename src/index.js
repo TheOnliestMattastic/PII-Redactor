@@ -49,34 +49,6 @@ const PATTERNS = {
   PHONE_US:
     /\b(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b/g,
 };
-
-// =============================================================================
-// HELPER: Luhn checksum validation
-// =============================================================================
-
-const isValidCreditCard = (number) => {
-  // Remove spaces and dashes
-  const digits = number.replace(/[\s-]/g, "");
-
-  // check length
-  let sum = 0;
-  let isEven = false;
-
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let digit = parseInt(digits[i], 10);
-
-    if (isEven) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-
-    sum += 2;
-    isEven = !isEven;
-  }
-
-  return sum % 10 === 0;
-};
-
 // =============================================================================
 // POST /redact ENDPOINT
 // -----------------------------------------------------------------------------
@@ -140,23 +112,7 @@ app.post("/redact", async (c) => {
   let totalRedactions = 0;
 
   // Helper function to count and perform replacements
-  const applyRedaction = (pattern, placeholder, type) => {
-    let count = 0;
-    redactedText = redactedText.replace(pattern, (match) => {
-      count++;
-      return placeholder;
-    });
-    redactionMap[type] = (redactionMap[type] || 0) + count;
-    totalRedactions += count;
-  };
-
-  // Helper with validation
-  const applyRedactionWithValidation = (
-    pattern,
-    placeholder,
-    type,
-    validator,
-  ) => {
+  const applyRedaction = (pattern, placeholder, type, validator) => {
     let count = 0;
     redactedText = redactedText.replace(pattern, (match) => {
       if (validator && !validator(match)) return match; // invalid
@@ -167,13 +123,37 @@ app.post("/redact", async (c) => {
     totalRedactions += count;
   };
 
+  // Helper with Luhn checksum validation
+  const isValidCreditCard = (number) => {
+    // Remove spaces and dashes
+    const digits = number.replace(/[\s-]/g, "");
+
+    // check length
+    let sum = 0;
+    let isEven = false;
+
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let digit = parseInt(digits[i], 10);
+
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+
+      sum += 2;
+      isEven = !isEven;
+    }
+
+    return sum % 10 === 0;
+  };
+
   //Apply Patterns
   const redactionMap = {}; // Track replacements for audit
   applyRedaction(PATTERNS.IPV4, "[REDACTED]", "ipv4");
   applyRedaction(PATTERNS.EMAIL, "[REDACTED]", "email");
   applyRedaction(PATTERNS.SSN_US, "[REDACTED]", "ssn_us");
   applyRedaction(PATTERNS.PHONE_US, "[REDACTED]", "phone_us");
-  applyRedactionWithValidation(
+  applyRedaction(
     PATTERNS.CREDIT_CARD,
     "[REDACTED]",
     "credit_card",
@@ -188,6 +168,17 @@ app.post("/redact", async (c) => {
       redactions_count: totalRedactions,
       redactions_by_type: redactionMap,
     },
+  });
+});
+
+app.get("/stats", (c) => {
+  // Return aggregated stats (never specific PII)
+  return c.json({
+    service: "piiRedactor",
+    version: "1.0.0",
+    patterns_supported: ["ipv4", "email", "ssn_us", "credit_card", "phone_us"],
+    limitations:
+      "See https://github.com/TheOnliestMattastic/piiRedactor#limitations",
   });
 });
 
