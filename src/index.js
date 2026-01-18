@@ -36,6 +36,33 @@ const PATTERNS = {
 };
 
 // =============================================================================
+// HELPER: Luhn checksum validation
+// =============================================================================
+
+const isValidCreditCard = (number) => {
+  // Remove spaces and dashes
+  const digits = number.replace(/[\s-]/g, "");
+
+  // check length
+  let sum = 0;
+  let isEven = false;
+
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let digit = parseInt(digits[i], 10);
+
+    if (isEven) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+
+    sum += 2;
+    isEven = !isEven;
+  }
+
+  return sum % 10 === 0;
+};
+
+// =============================================================================
 // POST /redact ENDPOINT
 // -----------------------------------------------------------------------------
 // WHAT: Accepts text and replaces sensitive PII patterns with placeholders.
@@ -107,12 +134,34 @@ app.post("/redact", async (c) => {
     totalRedactions += count;
   };
 
+  // Helper with validation
+  const applyRedactionWithValidation = (
+    pattern,
+    placeholder,
+    type,
+    validator,
+  ) => {
+    let count = 0;
+    redactedText = redactedText.replace(pattern, (match) => {
+      if (validator && !validator(match)) return match; // invalid
+      count++;
+      return placeholder;
+    });
+    redactionMap[type] = (redactionMap[type] || 0) + count;
+    totalRedactions += count;
+  };
+
   //Apply Patterns
   const redactionMap = {}; // Track replacements for audit
   applyRedaction(PATTERNS.IPV4, "[REDACTED]", "ipv4");
   applyRedaction(PATTERNS.EMAIL, "[REDACTED]", "email");
   applyRedaction(PATTERNS.SSN_US, "[REDACTED]", "ssn_us");
-  applyRedaction(PATTERNS.CREDIT_CARD, "[REDACTED]", "credit_card");
+  applyRedactionWithValidation(
+    PATTERNS.CREDIT_CARD,
+    "[REDACTED]",
+    "credit_card",
+    isValidCreditCard,
+  );
 
   // 3. Construct Response
   return c.json({
