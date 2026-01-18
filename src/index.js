@@ -28,7 +28,8 @@ const PATTERNS = {
   EMAIL: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
 
   // SSN (US): Standard AAA-GG-SSSS format
-  SSN_US: /\b\d{3}-\d{2}-\d{4}\b/g,
+  // NOTE: This pattern rejects known-invalid SSN ranges (000, 666, 900-999)
+  SSN_US: /\b(?!000|666|9\d{2})-?\d{3}-(?!00)-?\d{2}-(?!0000)-?\d{4}\b/g,
 
   // Credit Card (Simple): 13-19 digits, optionally separated by dashes or spaces
   CREDIT_CARD: /\b(?:\d[ -]*?){13,19}\b/g,
