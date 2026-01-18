@@ -96,30 +96,30 @@ app.post("/redact", async (c) => {
   let totalRedactions = 0;
 
   // Helper function to count and perform replacements
-  const applyRedaction = (pattern, placeholder) => {
+  const applyRedaction = (pattern, placeholder, type) => {
     let count = 0;
     redactedText = redactedText.replace(pattern, (match) => {
       count++;
       return placeholder;
     });
+    redactionMap[type] = (redactionMap[type] || 0) + count;
     totalRedactions += count;
   };
 
   //Apply Patterns
-  applyRedaction(PATTERNS.IPV4, "[REDACTED_IP]");
-  applyRedaction(PATTERNS.EMAIL, "[REDACTED_EMAIL]");
-  applyRedaction(PATTERNS.SSN_US, "[REDACTED_SSN]");
-  // Simple CC check: replace with a generic tag to avoid leaking card length
-  applyRedaction(PATTERNS.CREDIT_CARD, "[REDACTED_CREDIT_CARD]");
+  const redactionMap = {}; // Track replacements for audit
+  applyRedaction(PATTERNS.IPV4, "[REDACTED]", "ipv4");
+  applyRedaction(PATTERNS.EMAIL, "[REDACTED]", "email");
+  applyRedaction(PATTERNS.SSN_US, "[REDACTED]", "ssn_us");
+  applyRedaction(PATTERNS.CREDIT_CARD, "[REDACTED]", "credit_card");
 
   // 3. Construct Response
   return c.json({
     success: true,
     result: redactedText,
     metadata: {
-      original_length: text.length,
-      redacted_length: redactedText.length,
       redactions_count: totalRedactions,
+      redactions_by_type: redactionMap,
     },
   });
 });
