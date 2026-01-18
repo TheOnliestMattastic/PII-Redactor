@@ -56,6 +56,10 @@ const PATTERNS = {
 // =============================================================================
 
 app.post("/redact", async (c) => {
+  const rapidSecret = c.env.RAPIDAPI_SECRET;
+  if (rapidSecret !== c.req.header("x-rapidapi-proxy-secret")) {
+    return c.json({ error: "Unauthorized access. Please use RapidAPI." }, 401);
+  }
   // ---------------------------------------------------------------------------
   // 1. Input Parsing & Validation
   // ---------------------------------------------------------------------------
