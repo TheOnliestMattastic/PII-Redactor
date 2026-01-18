@@ -60,6 +60,7 @@ Pick 1-3 relevant keywords (don't repeat code). Keep comments brief (1-2 lines p
 ## Testing & Validation
 
 When adding or modifying redaction patterns:
+
 1. Test against known examples (IPv4, email, SSN, credit card formats)
 2. Test edge cases: malformed input, partial matches, false positives
 3. Verify the `totalRedactions` count is accurate
@@ -68,19 +69,31 @@ When adding or modifying redaction patterns:
 ## Common Tasks
 
 ### Add a new PII pattern
-1. Add regex to `PATTERNS` object
-2. Add corresponding `applyRedaction()` call in the `/redact` endpoint
-3. Update this file with pattern documentation
-4. Test with example data
-5. Commit with `feat(patterns): add [PII_TYPE] detection`
+
+1. Add regex to `PATTERNS` object (top of `src/index.js`)
+2. Add test cases to `test/patterns.test.js`
+3. Add corresponding `applyRedaction()` call in the `/redact` endpoint
+4. Run `node test/patterns.test.js` and verify all pass
+5. Document limitations in code comments
+6. Update `README.md` with new pattern info
+7. Commit with `feat(patterns): add [PII_TYPE] detection`
+
+### Test before deploying
+
+```bash
+npm test
+wrangler deploy --dry-run
+```
 
 ### Modify regex accuracy
+
 1. Update pattern in `PATTERNS`
 2. Document any improvements or limitations in a comment
 3. Test against diverse inputs
 4. Commit with `fix(patterns): improve [TYPE] detection accuracy`
 
 ### Update error handling
+
 1. Modify validation logic in the `/redact` endpoint (lines 36-57)
 2. Return appropriate HTTP status codes (400 for bad input, 500 for server errors)
 3. Provide clear error messages in response
@@ -94,12 +107,15 @@ When session ends, save a brief devlog to `.notes/DEVLOG.md`:
 ## [YYYY-MM-DD] [HH:MM - HH:MM]
 
 ### What I Did
+
 - [Bullet points of completed work]
 
 ### Currently Working On
+
 - [Incomplete work / in-progress tasks]
 
 ### Next Steps
+
 - [What to resume with tomorrow]
 ```
 
