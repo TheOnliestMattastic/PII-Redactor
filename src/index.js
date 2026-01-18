@@ -12,8 +12,6 @@ const app = new Hono();
 // =============================================================================
 
 const MAX_INPUT_LENGTH = 1_048_576; // 1MB
-const RATE_LIMIT_WINDOW = 60_000; // 60 seconds
-const MAX_REQUESTS_PER_MINUTE = 100; // per IP/key
 
 // =============================================================================
 // CONFIGURATION
@@ -149,13 +147,13 @@ app.post("/redact", async (c) => {
 
   //Apply Patterns
   const redactionMap = {}; // Track replacements for audit
-  applyRedaction(PATTERNS.IPV4, "[REDACTED]", "ipv4");
-  applyRedaction(PATTERNS.EMAIL, "[REDACTED]", "email");
-  applyRedaction(PATTERNS.SSN_US, "[REDACTED]", "ssn_us");
-  applyRedaction(PATTERNS.PHONE_US, "[REDACTED]", "phone_us");
+  applyRedaction(PATTERNS.EMAIL, "[REDACTED_EMAIL]", "email");
+  applyRedaction(PATTERNS.IPV4, "[REDACTED_IPV4]", "ipv4");
+  applyRedaction(PATTERNS.SSN_US, "[REDACTED_SSN_US]", "ssn_us");
+  applyRedaction(PATTERNS.PHONE_US, "[REDACTED_PHONE_US]", "phone_us");
   applyRedaction(
     PATTERNS.CREDIT_CARD,
-    "[REDACTED]",
+    "[REDACTED_CREDIT_CARD]",
     "credit_card",
     isValidCreditCard,
   );
