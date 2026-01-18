@@ -22,7 +22,7 @@ const MAX_REQUESTS_PER_MINUTE = 100; // per IP/key
 // Standard PII Patterns (Regex)
 const PATTERNS = {
   // IPv4: 4 groups of 1-3 digits separated by dots
-  IPV4: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+  IPV4: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
 
   // Email: Standard pattern for most common email formats
   EMAIL: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
