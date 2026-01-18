@@ -17,6 +17,17 @@ const MAX_REQUESTS_PER_MINUTE = 100; // per IP/key
 
 // =============================================================================
 // CONFIGURATION
+// -----------------------------------------------------------------------------
+// NOTE: Pattern Limitations:
+// Patterns are intentionally conservative for production use. However, they
+// have known limitations and false-positive rates:
+//
+// - IPv4: Matches valid-format IPs but doesn't geolocate or check active status
+// - EMAIL: Matches RFC-like emails; false positives on obfuscated emails (e.g., user [at] domain.com)
+// - SSN: Excludes reserved ranges; still may match non-US patterns
+// - CREDIT_CARD: Luhn-validated; avoids most order numbers but may match valid card patterns in test data
+//
+// For critical applications, combine with secondary validation or context-aware filtering.
 // =============================================================================
 
 // Standard PII Patterns (Regex)
@@ -88,6 +99,7 @@ app.post("/redact", async (c) => {
         success: false,
         error: "Invalid or missing JSON body",
         code: "INVALID_BODY",
+        hint: 'Ensure request body is valid JSON with a \'text\' property: {"text": "Your text here"}',
       },
       400,
     );
