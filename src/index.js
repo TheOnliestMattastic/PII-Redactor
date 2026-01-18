@@ -33,6 +33,10 @@ const PATTERNS = {
 
   // Credit Card (Simple): 13-19 digits, optionally separated by dashes or spaces
   CREDIT_CARD: /\b(?:\d[ -]*?){13,19}\b/g,
+
+  // Phone: US formats (10 digits in various formats)
+  PHONE_US:
+    /\b(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b/g,
 };
 
 // =============================================================================
@@ -156,6 +160,7 @@ app.post("/redact", async (c) => {
   applyRedaction(PATTERNS.IPV4, "[REDACTED]", "ipv4");
   applyRedaction(PATTERNS.EMAIL, "[REDACTED]", "email");
   applyRedaction(PATTERNS.SSN_US, "[REDACTED]", "ssn_us");
+  applyRedaction(PATTERNS.PHONE_US, "[REDACTED]", "phone_us");
   applyRedactionWithValidation(
     PATTERNS.CREDIT_CARD,
     "[REDACTED]",
