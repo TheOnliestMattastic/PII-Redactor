@@ -5,8 +5,8 @@ const app = new Hono();
 // =============================================================================
 // VALIDATION
 // -----------------------------------------------------------------------------
-// WHAT: Enfore input constraints to prevent DoS and memory exhaustion
-// WHY: Cludflare Workers have memory/execution limits; unbounded input is a vector
+// WHAT: Enforce input constraints to prevent DoS and memory exhaustion
+// WHY:  Cloudflare Workers have memory/execution limits; unbounded input is a vector
 // HOW: Check string length, reject oversized payloads early
 // NOTE: 1MB limit is reasonable for edge compute; adjust based on CF tier
 // =============================================================================
@@ -140,7 +140,7 @@ app.post("/redact", async (c) => {
         if (digit > 9) digit -= 9;
       }
 
-      sum += 2;
+      sum += digit;
       isEven = !isEven;
     }
 

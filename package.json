@@ -8,10 +8,19 @@
     "deploy": "wrangler deploy",
     "test": "node --test"
   },
-  "keywords": [],
-  "author": "TheOnliestMATTastic",
+  "keywords": [
+    "pii",
+    "redaction",
+    "cloudflare-workers",
+    "privacy",
+    "api"
+  ],
+  "author": "TheOnliestMattastic",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "hono": "^4.11.4"
   },
